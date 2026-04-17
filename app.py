@@ -10,7 +10,7 @@ from langchain_classic.chains.combine_documents import create_stuff_documents_ch
 from langchain_classic.chains import create_retrieval_chain
 from fastapi.middleware.cors import CORSMiddleware
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "portfolio-diego-493515-fcba40f7ae88.json"
+#os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "portfolio-diego-493515-fcba40f7ae88.json"
 # --- CONFIGURACIÓN DE ENTORNO ---
 # Asegúrate de que tu archivo JSON de credenciales esté en la carpeta del proyecto
 # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "tu-archivo-credenciales.json"
