@@ -1,22 +1,27 @@
-# 📄 CV Chatbot con RAG & Ollama
+# 🧠 Diego's Neural Lab: CV Chatbot con RAG, FastAPI & Google Gemini
 
-Este es un asistente inteligente capaz de responder preguntas sobre un Currículum Vitae (PDF) utilizando una arquitectura **RAG** (Generación Aumentada por Recuperación). El sistema procesa el documento localmente, asegurando la privacidad de los datos.
+Este proyecto es un asistente inteligente de alto rendimiento diseñado para interactuar con mi perfil profesional. Utiliza una arquitectura **RAG** (Generación Aumentada por Recuperación) para ofrecer respuestas precisas, veraces y contextualizadas basadas en mi trayectoria técnica.
 
-## 🚀 Tecnologías utilizadas
-* **LangChain**: Framework para orquestar la lógica de LLMs.
-* **Ollama (Llama 3)**: Modelo de lenguaje ejecutado de forma local.
-* **ChromaDB**: Base de datos vectorial para el almacenamiento de embeddings.
-* **Python 3.14+**: Lenguaje de programación base.
+Actualmente, el sistema funciona como una **API REST independiente**, permitiendo su integración en cualquier frontend (como mi portfolio personal).
 
-## 🛠️ Funcionamiento
-1. **Carga**: Se lee el archivo PDF mediante `PyPDFLoader`.
-2. **Fragmentación**: El texto se divide en trozos (chunks) para un mejor procesamiento.
-3. **Embeddings**: Se convierten los textos a vectores usando `OllamaEmbeddings`.
-4. **Recuperación**: El sistema busca los fragmentos más relevantes ante una pregunta.
-5. **Respuesta**: El LLM genera una respuesta basada exclusivamente en el contexto del CV.
+## 🚀 Stack Tecnológico
+* **Google Gemini 1.5 Flash / 2.5 Flash Lite**: Modelos de lenguaje de última generación vía **Vertex AI**.
+* **FastAPI**: Framework de alto rendimiento para la construcción de la API.
+* **LangChain**: Orquestador principal para la lógica de recuperación y cadenas de IA.
+* **ChromaDB**: Base de datos vectorial para el almacenamiento y búsqueda de embeddings.
+* **Google Cloud (Vertex AI)**: Infraestructura cloud para inferencia y generación de embeddings (`text-embedding-004`).
+* **Python 3.12+**: Lenguaje base del ecosistema.
 
-## 📋 Requisitos e Instalación
-1. Tener instalado [Ollama](https://ollama.com/) y el modelo Llama3 (`ollama run llama3`).
-2. Instalar las dependencias de Python:
+## 🏗️ Arquitectura del Sistema
+1.  **Ingesta de Datos (ETL)**: Procesamiento de mi CV en PDF mediante `PyPDFLoader`.
+2.  **Segmentación (Chunking)**: División estratégica del texto para optimizar la ventana de contexto del modelo.
+3.  **Vectorización**: Generación de embeddings vectoriales mediante modelos oficiales de Google Cloud.
+4.  **Almacenamiento**: Persistencia en **ChromaDB** para una recuperación semántica ultra rápida.
+5.  **Inferencia RAG**: Cadena de recuperación que combina el contexto del CV con la potencia de Gemini para responder de forma profesional.
+
+## 🛠️ Instalación y Configuración
+
+1. **Clonar el repositorio**:
    ```bash
-   pip install langchain langchain-community langchain-ollama langchain-chroma pypdf
+   git clone [https://github.com/Dieveloper/Chatbot.git](https://github.com/Dieveloper/Chatbot.git)
+   cd Chatbot
