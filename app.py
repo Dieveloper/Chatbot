@@ -1,4 +1,5 @@
 import os
+import unicodedata
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from langchain_google_vertexai import VertexAI, VertexAIEmbeddings
@@ -14,6 +15,20 @@ from fastapi.middleware.cors import CORSMiddleware
 # --- CONFIGURACIÓN DE ENTORNO ---
 # Asegúrate de que tu archivo JSON de credenciales esté en la carpeta del proyecto
 # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "tu-archivo-credenciales.json"
+
+
+
+
+# --- UTILIDADES ---
+def normalizar_texto(texto):
+    """Limpia el texto de tildes, signos y mayúsculas para ahorrar tokens."""
+    texto = texto.lower().strip()
+    # Eliminamos signos comunes
+    for caracter in ["?", "!", "¿", "¡", ".", ","]:
+        texto = texto.replace(caracter, "")
+    # Eliminamos acentos
+    texto = unicodedata.normalize('NFD', texto)
+    return ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
 
 app = FastAPI(
     title="Diego's Gemini RAG API",
@@ -58,7 +73,7 @@ vector_db = Chroma.from_documents(
 
 # --- 3. MODELO GEMINI Y PROMPT ---
 llm = VertexAI(
-    model_name="gemini-2.5-flash-lite", 
+    model_name="gemini-1.5-flash", 
     location="europe-west1", 
     temperature=0
 )
@@ -94,20 +109,57 @@ def home():
         "status": "Ready"
     }
 
+
+SALUDOS = {
+    "hola", "hola!", "buenas", "buenos dias", "buenas tardes", "buenas noches",
+    "hey", "hola que tal", "saludos", "hola diego ai", "hola ai", "que tal",
+    "buen dia", "hola!", "holaaa", "hi", "hello"
+}
+
+
+DESPEDIDAS = {
+    "gracias", "muchas gracias", "perfecto gracias", "adios", "chao", 
+    "hasta luego", "nos vemos", "bye", "ok gracias", "entendido", 
+    "genial", "gracias por la info", "mil gracias", "listo"
+}
+
 @app.post("/ask", response_model=Response)
 async def ask_cv(query: Query):
     """
     Endpoint principal para preguntar sobre el CV de Diego.
     """
-    try:
-        # Ejecutamos la cadena RAG
-        result = rag_chain.invoke({"input": query.question})
+    # 1. Obtenemos el texto y lo normalizamos
+    # Usamos query.question porque FastAPI ya parseó el JSON por nosotros
+    texto_usuario = query.question
+    query_normalizada = normalizar_texto(texto_usuario)
+
+    # 2. Filtro de Saludos (Ahorro de tokens)
+    if query_normalizada in SALUDOS:
         return {
-            "user_question": query.question,
+            "user_question": texto_usuario,
+            "ai_answer": "¡Hola! 👋 Soy el asistente virtual de Diego. ¿En qué puedo ayudarte hoy respecto a su perfil profesional?"
+        }
+
+    # 3. Filtro de Despedidas
+    if query_normalizada in DESPEDIDAS:
+        return {
+            "user_question": texto_usuario,
+            "ai_answer": "¡De nada! Si tienes más dudas sobre los proyectos de Diego, aquí estaré. ¡Un saludo!"
+        }
+    
+    try:
+        # 4. Ejecutamos la cadena RAG solo si no es saludo/despedida
+        # Usamos el texto original (texto_usuario) para no perder semántica en la IA
+        result = rag_chain.invoke({"input": texto_usuario})
+        
+        return {
+            "user_question": texto_usuario,
             "ai_answer": result['answer']
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en la inferencia: {str(e)}")
+        # Es mejor imprimir el error en consola para debuguear
+        print(f"Error detectado: {e}")
+        raise HTTPException(status_code=500, detail="Error en la inferencia del nodo")
 
 # --- EJECUCIÓN ---
 # Para arrancar: uvicorn main:app --reload
