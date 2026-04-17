@@ -1,0 +1,26 @@
+# --- SEGURIDAD (VITAL) ---
+*.json
+.env
+
+# --- PYTHON ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+build/
+dist/
+
+# --- BASE DE DATOS LOCAL ---
+# Evita subir tu base de datos vectorial de Chroma o SQLite
+mi_db_vectorial/
+db_portfolio_google/
+*.db
+*.sqlite3
+
+# --- OTROS ---
+.vscode/
+.idea/
+.DS_Store
+data/*.pdf
