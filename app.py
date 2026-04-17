@@ -73,7 +73,7 @@ vector_db = Chroma.from_documents(
 
 # --- 3. MODELO GEMINI Y PROMPT ---
 llm = VertexAI(
-    model_name="gemini-1.5-flash", 
+    model_name="gemini-2.5-flash-lite", 
     location="europe-west1", 
     temperature=0
 )
