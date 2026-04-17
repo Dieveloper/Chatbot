@@ -146,20 +146,20 @@ async def ask_cv(query: Query):
             "user_question": texto_usuario,
             "ai_answer": "¡De nada! Si tienes más dudas sobre los proyectos de Diego, aquí estaré. ¡Un saludo!"
         }
-    else:
-        try:
+
+    try:
             # 4. Ejecutamos la cadena RAG solo si no es saludo/despedida
             # Usamos el texto original (texto_usuario) para no perder semántica en la IA
-            result = rag_chain.invoke({"input": texto_usuario})
+        result = rag_chain.invoke({"input": texto_usuario})
             
-            return {
+        return {
                 "user_question": texto_usuario,
                 "ai_answer": result['answer']
-            }
-        except Exception as e:
+        }
+    except Exception as e:
             # Es mejor imprimir el error en consola para debuguear
-            print(f"Error detectado: {e}")
-            raise HTTPException(status_code=500, detail="Error en la inferencia del nodo")
+        print(f"Error detectado: {e}")
+        raise HTTPException(status_code=500, detail="Error en la inferencia del nodo")
 
 # --- EJECUCIÓN ---
 # Para arrancar: uvicorn main:app --reload
