@@ -24,4 +24,4 @@ Actualmente, el sistema funciona como una **API REST independiente**, permitiend
 1. **Clonar el repositorio**:
    ```bash
    git clone [https://github.com/Dieveloper/Chatbot.git](https://github.com/Dieveloper/Chatbot.git)
-   cd Chatbot
+   cd chat
