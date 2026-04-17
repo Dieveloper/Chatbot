@@ -141,25 +141,25 @@ async def ask_cv(query: Query):
         }
 
     # 3. Filtro de Despedidas
-    if query_normalizada in DESPEDIDAS:
+    elif query_normalizada in DESPEDIDAS:
         return {
             "user_question": texto_usuario,
             "ai_answer": "¡De nada! Si tienes más dudas sobre los proyectos de Diego, aquí estaré. ¡Un saludo!"
         }
-    
-    try:
-        # 4. Ejecutamos la cadena RAG solo si no es saludo/despedida
-        # Usamos el texto original (texto_usuario) para no perder semántica en la IA
-        result = rag_chain.invoke({"input": texto_usuario})
-        
-        return {
-            "user_question": texto_usuario,
-            "ai_answer": result['answer']
-        }
-    except Exception as e:
-        # Es mejor imprimir el error en consola para debuguear
-        print(f"Error detectado: {e}")
-        raise HTTPException(status_code=500, detail="Error en la inferencia del nodo")
+    else:
+        try:
+            # 4. Ejecutamos la cadena RAG solo si no es saludo/despedida
+            # Usamos el texto original (texto_usuario) para no perder semántica en la IA
+            result = rag_chain.invoke({"input": texto_usuario})
+            
+            return {
+                "user_question": texto_usuario,
+                "ai_answer": result['answer']
+            }
+        except Exception as e:
+            # Es mejor imprimir el error en consola para debuguear
+            print(f"Error detectado: {e}")
+            raise HTTPException(status_code=500, detail="Error en la inferencia del nodo")
 
 # --- EJECUCIÓN ---
 # Para arrancar: uvicorn main:app --reload
