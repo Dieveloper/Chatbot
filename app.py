@@ -38,7 +38,7 @@ app = FastAPI(
     description="Backend profesional con FastAPI y Google Gemini para consulta de CV"
 )
 
-N8N_WEBHOOK_URL = "http://localhost:5678/webhook-test/Agendar"
+N8N_WEBHOOK_URL = "https://n8n-portfolio-606612721828.europe-west1.run.app/webhook-test/Agendar"
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], # Esto permite que cualquier web consulte tu API
