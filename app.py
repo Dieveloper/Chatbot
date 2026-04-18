@@ -1,7 +1,10 @@
 import os
 import unicodedata
+import requests
+import json
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from datetime import datetime
 from langchain_google_vertexai import VertexAI, VertexAIEmbeddings
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import CharacterTextSplitter
@@ -35,7 +38,7 @@ app = FastAPI(
     description="Backend profesional con FastAPI y Google Gemini para consulta de CV"
 )
 
-
+N8N_WEBHOOK_URL = "http://localhost:5678/webhook-test/Agendar"
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], # Esto permite que cualquier web consulte tu API
@@ -78,9 +81,11 @@ llm = VertexAI(
     temperature=0
 )
 system_prompt = (
-    "Eres un asistente experto en analizar currículums. "
-    "Tu objetivo es ayudar a los reclutadores a conocer mejor a Diego Gomez Jordan. "
-    "Responde de forma profesional, concisa y amable basándote solo en este contexto: {context}"
+    "Eres un asistente experto en el CV de Diego Gomez Jordan. "
+    "Tu objetivo es responder a reclutadores de forma profesional, directa y muy concisa. "
+    "Usa listas de puntos si es necesario. "
+    "Responde únicamente basándote en este contexto: {context}. "
+    "Máximo 3 oraciones cortas por respuesta."
 )
 
 prompt = ChatPromptTemplate.from_messages([
@@ -91,6 +96,9 @@ prompt = ChatPromptTemplate.from_messages([
 # Creamos la cadena de recuperación (RAG Chain)
 combine_docs_chain = create_stuff_documents_chain(llm, prompt)
 rag_chain = create_retrieval_chain(vector_db.as_retriever(), combine_docs_chain)
+
+
+
 
 # --- MODELOS DE DATOS ---
 class Query(BaseModel):
@@ -123,43 +131,70 @@ DESPEDIDAS = {
     "genial", "gracias por la info", "mil gracias", "listo"
 }
 
+PALABRAS_CITAS = ["agendar", "cita", "reunion", "quedar", "entrevista", "calendario"]
+
+
+# --- ENDPOINT ACTUALIZADO ---
+
 @app.post("/ask", response_model=Response)
 async def ask_cv(query: Query):
-    """
-    Endpoint principal para preguntar sobre el CV de Diego.
-    """
-    # 1. Obtenemos el texto y lo normalizamos
-    # Usamos query.question porque FastAPI ya parseó el JSON por nosotros
     texto_usuario = query.question
     query_normalizada = normalizar_texto(texto_usuario)
 
-    # 2. Filtro de Saludos (Ahorro de tokens)
+    # 1. Filtro de Saludos
     if query_normalizada in SALUDOS:
         return {
             "user_question": texto_usuario,
-            "ai_answer": "¡Hola! 👋 Soy el asistente virtual de Diego. ¿En qué puedo ayudarte hoy respecto a su perfil profesional?"
+            "ai_answer": "¡Hola! 👋 Soy el asistente virtual de Diego. ¿En qué puedo ayudarte hoy?"
         }
 
-    # 3. Filtro de Despedidas
+    # 2. Filtro de Despedidas
     elif query_normalizada in DESPEDIDAS:
         return {
             "user_question": texto_usuario,
-            "ai_answer": "¡De nada! Si tienes más dudas sobre los proyectos de Diego, aquí estaré. ¡Un saludo!"
+            "ai_answer": "¡De nada! Aquí estaré si necesitas saber algo más de Diego. ¡Un saludo!"
         }
 
-    try:
-            # 4. Ejecutamos la cadena RAG solo si no es saludo/despedida
-            # Usamos el texto original (texto_usuario) para no perder semántica en la IA
-        result = rag_chain.invoke({"input": texto_usuario})
-            
+    # --- 3. LÓGICA DE CITAS MEJORADA ---
+    # Paso A: El usuario pide una cita por primera vez (sin dar detalles)
+    if any(palabra in query_normalizada for palabra in PALABRAS_CITAS) and not any(char.isdigit() for char in query_normalizada):
         return {
+            "user_question": texto_usuario,
+            "ai_answer": "¡Claro! Me encantaría agendar una entrevista para que conozcas a Diego. ¿Qué día y a qué hora te vendría bien? (Ejemplo: Lunes a las 17:00)"
+        }
+
+    # Paso B: El usuario responde con algo que parece una fecha/hora (tiene números) y mencionó cita antes o ahora
+    if (any(palabra in query_normalizada for palabra in PALABRAS_CITAS) or "las " in query_normalizada) and any(char.isdigit() for char in query_normalizada):
+        payload = {
+            "nombre": "Visitante del Portfolio", 
+            "email": "pendiente@solicitar.com",
+            "mensaje": texto_usuario,
+            "fecha_peticion": str(datetime.now())
+        }
+        
+        try:
+            # Quitamos el espacio de la URL para evitar errores de red
+            url_limpia = N8N_WEBHOOK_URL.replace(" ", "%20")
+            requests.post(url_limpia, json=payload, timeout=5)
+            
+            return {
                 "user_question": texto_usuario,
-                "ai_answer": result['answer']
+                "ai_answer": f"¡Perfecto! He tomado nota: '{texto_usuario}'. Diego acaba de recibir la notificación en su calendario y te contactará para confirmar. ¿Alguna otra duda sobre su perfil?"
+            }
+        except Exception as e:
+            print(f"Error con n8n: {e}")
+            return {
+                "user_question": texto_usuario,
+                "ai_answer": "He tenido un pequeño problema técnico al anotar la cita, pero Diego revisará los mensajes manualmente. ¡Gracias!"
+            }
+
+    # 4. Si no es nada de lo anterior, usamos Gemini (RAG)
+    try:
+        result = rag_chain.invoke({"input": texto_usuario})
+        return {
+            "user_question": texto_usuario,
+            "ai_answer": result['answer']
         }
     except Exception as e:
-            # Es mejor imprimir el error en consola para debuguear
         print(f"Error detectado: {e}")
         raise HTTPException(status_code=500, detail="Error en la inferencia del nodo")
-
-# --- EJECUCIÓN ---
-# Para arrancar: uvicorn main:app --reload
